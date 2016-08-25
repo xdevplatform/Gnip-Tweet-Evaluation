@@ -1,1 +1,0 @@
-# Gnip-Tweet-Evaluation
