@@ -31,7 +31,7 @@ if args.tweet_ids != [] and args.tweet_ids_file is not None:
     sys.stderr.write('Ambiguous input! Must not specify both "-i" and "-f" options!. Exiting.\n') 
     sys.exit(1)
 if [args.do_total,args.do_28hr,(args.do_historical != (None,None)),args.do_month].count(True) != 1:
-    sys.stderr.write('Must only specify one of the options: [-T,-D,-H,-M,-TT]. Exiting.\n')
+    sys.stderr.write('Must only specify one of the options: [-T,-D,-H,-M]. Exiting.\n')
     sys.exit(1)
 
 if args.tweet_ids_file is None and args.tweet_ids == []:
