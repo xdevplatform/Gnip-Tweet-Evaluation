@@ -76,7 +76,7 @@ def analyze_user_ids(user_ids_analyzed, results, groupings = None, user_ids_base
     Call to Audience API happens here.  All we ask from the caller are user IDs, a
     results object, and (optionally) a grouping.
     """
-    import gnip_tweet_evaluation.audience_api as api
+    import gnip_insights_interface.audience_api as api
 
     if groupings is not None:
         use_groupings = groupings

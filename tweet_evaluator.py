@@ -40,11 +40,11 @@ if __name__ == '__main__':
             help='directory for output files; default is %(default)s')
     parser.add_argument('-s','--splitting-config',dest='splitting_config',default=None,
             help='module that contains functions on Tweets that define the "analyzed" and "baseline" sets')
+    parser.add_argument('--no-insights',dest='use_insights',action='store_false',default=True)
     args = parser.parse_args()
 
     # get the time right now, to use in output naming
     time_now = datetime.datetime.now()
-    time_string = time_now.isoformat().split(".")[0].translate(None,":") 
     output_directory = '{0}/{1:04d}/{2:02d}/{3:02d}/'.format(args.output_directory.rstrip('/')
             ,time_now.year
             ,time_now.month
@@ -74,6 +74,13 @@ if __name__ == '__main__':
                 input_results = results) 
     else:
         results = analysis.setup_analysis(conversation = args.do_conversation_analysis, audience = args.do_audience_analysis) 
+
+    if not args.use_insights:
+        results.pop('audience_api',None)
+        if 'analyzed' in results:
+            results['analyzed'].pop('audience_api',None)
+        if 'baseline' in results:
+            results['baseline'].pop('audience_api',None)
 
     # manage input sources, file opening, and deserialization
     if args.input_file_name is not None:

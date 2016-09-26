@@ -1,46 +1,57 @@
 # Overview
 
-This repository contains a Python package and executable scripts that
-perform audience and conversation analysis on sets of Tweets payloads,
-Tweet IDs, or Twitter user IDs.
+This repository contains a Python package and an executable script that
+performs audience and conversation analysis on sets of Tweet payloads.
+The audience analysis optionally includes data from Twitter's
+Audience API.
 
 # Installation
 
-This package can be pip-installed.
+This package can be installed from the cloned repository location.
 
-`$ pip install gnip_tweet_evaluation[plotting]` 
+`[REPOSITORY] $ pip install -e .[plotting,insights]`
 
-You can also install a local version from the cloned repository location.
-
-`[REPOSITORY] $ pip install gnip_tweet_evaluation[plotting] -U`
-
-In both cases, `plotting` installs the extra dependencies needed for time series plotting. 
+The optional `plotting` specification installs the extra dependencies 
+needed for time series plotting,
+and the `insights` specification installs the 
+[Gnip-Insights-Interface](https://github.com/jeffakolb/Gnip-Insights-Interface) 
+package. To authenticate to the Gnip Insights products, you must have 
+a credentials file called `.twitter_api_creds` in your home directory, 
+which is formatted as described in the 
+[README](https://github.com/jeffakolb/Gnip-Insights-Interface/README.md) 
+for Gnip-Insights-Interface.
 
 # What It Does
 
-The core analysis module defines analyses performed on a set of Tweet bodies
+The core analysis module defines analyses to be performed on a set of Tweet bodies
 (conversation analysis) and on a set of Twitter user biographies (audience analysis).
 These analyses include the calculation of top n-grams, top hashtags, and top
 URLs, along with geographic and language summaries.
-We augment audience analysis by extracting the user IDs and running them
-through the Twitter Audience API. This product returns demographic aggregations
-for gender, age, device, carrier, location, and interests. 
-We also provide an interface for passing a
-set of Tweet IDs to the Twitter Engagements API, which provide 
-engagement data such as impressions, favorites, and replies.
+We optionally augment the audience analysis by extracting the user IDs and running them
+through the [Twitter Audience API](http://support.gnip.com/apis/audience_api/). 
+This product returns aggregate info for demographic variables such as
+gender, age, device, carrier, location, and interests. 
 
 # Interfaces and Examples
 
-We do tweet evaluation with the `tweet_evaluator.py` script. You must have
-credentials for the Audience API to get demographic model results. All results
-can be returned to text files and to the screen. 
+We do command-line Tweet evaluation with the `tweet_evaluator.py` script. 
+You must have credentials for the Audience API to get demographic model results.
+Otherwise, you can use the `--no-insights` option to stick to Tweet payload data
+All results can be returned to text files and to the screen. 
+From the repository directory,
+you can run the following example analysis on dummy Tweet data:
 
-We pass user IDs directly to the Audience API with the 
-`user_id_evaluator.py` script, and the results can be written to text files
-or printed to the screen. 
+```bash
+$ cat example/dummy_tweets.json | tweet_evaluator.py -a -c --no-insights
+```
 
-We get Tweet engagement data with the `tweet_engagements.py` script, which
-takes input Tweet IDs from `stdin` or from a text file.
+See the script's help menu for a full list of options and output specifications.
+
+The analysis code is packaged into two modules in the `gnip_tweet_evaluation`
+directory: `analysis.py` and `output.py`. The analysis module defines a setup 
+function, which configures all the analyses to be run. It also provides the 
+ability to produce *relative* results (see next section). The output module
+handles data aggregation, display, and writing to files. 
 
 # Relative Audience Evaluation
 

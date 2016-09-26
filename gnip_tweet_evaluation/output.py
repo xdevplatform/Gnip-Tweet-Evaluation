@@ -5,10 +5,15 @@ import os
 import datetime
 from collections import defaultdict
 from math import ceil
-from matplotlib import use
-use('Agg')
-import matplotlib.pyplot as plt
-from matplotlib import dates, use
+
+do_plotting = True
+try:
+    from matplotlib import use
+    use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib import dates, use
+except ImportError:
+    do_plotting = False
 
 logger = logging.getLogger('output')
 
@@ -25,7 +30,9 @@ def top_terms_output(ngrams_object, title, output_path_base):
     
     top_tweet_terms_file = open(output_path_base + title + '.txt', 'w')
     top_terms = ngrams_object.get_repr()
-    top_tweet_terms_file.write(top_terms.encode('utf-8'))
+    if sys.version_info[0] < 3:
+        top_terms = top_terms.encode('utf-8')
+    top_tweet_terms_file.write(top_terms)
     top_tweet_terms_file.close()
 
 def user_frequency_output(counts_dict, title, quantity, output_path_base):
@@ -47,7 +54,10 @@ def count_frequency_output(counts_dict, title, quantity, item, output_path_base)
     """ output frequency counts """
     # counts_dict looks like: {item: quantity}
     frequencies = sorted(counts_dict.items(), key=lambda x: x[1], reverse=True)
-    list_of_output_strings = [ unicode(x[1]) + ', ' + x[0] for x in frequencies ]
+    if sys.version_info[0] < 3:
+        list_of_output_strings = [ unicode(x[1]) + ', ' + x[0] for x in frequencies ]
+    else:
+        list_of_output_strings = [ str(x[1]) + ', ' + x[0] for x in frequencies ]
     
     sys.stdout.write("\n\n{}, {}\n".format(quantity, item))
     sys.stdout.write("\n".join(list_of_output_strings[0:10]))
@@ -164,11 +174,11 @@ def dump_results(results, output_path, uid):
         count_frequency_output(results["hashtags"], 
                 "hashtags", "number of times tweeted", "hashtag", output_file_base)
     
-    if "local_timeline" in results:
+    if "local_timeline" in results and do_plotting:
         local_timeline_plot(results["local_timeline"], 
                 "local_timeline", output_file_base)
     
-    if "utc_timeline" in results:
+    if "utc_timeline" in results and do_plotting:
         utc_timeline_plot()
 
     if "number_of_links" in results:
