@@ -128,7 +128,7 @@ def compare_results(results):
             continue
 
         for key_level_1,value_level_1 in grouping.items():
-            if isinstance(value_level_1,unicode):
+            if isinstance(value_level_1,str):
                 analyzed_value = float(value_level_1)
                 try:
                     baseline_value = float(data_baseline[group_name][key_level_1])
@@ -240,16 +240,19 @@ def analyze_tweet(tweet, results):
             for h in tweet["twitter_entities"]["hashtags"]:
                 results["hashtags"][h["text"].lower()] += 1
     
-    # count the occurences of different top-level domains
-    if ("urls" in results) and ("urls" in tweet["gnip"]):
-        for url in tweet["gnip"]["urls"]:
-            try:
-                results["urls"][url["expanded_url"].split("/")[2]] += 1
-            except (KeyError,IndexError,AttributeError):
-                pass
-    # and the number of links total
-    if ("number_of_links" in results) and ("urls" in tweet["gnip"]):
-        results["number_of_links"] += len(tweet["gnip"]["urls"])
+    try:
+        # count the occurences of different top-level domains
+        if ("urls" in results) and ("urls" in tweet["gnip"]):
+            for url in tweet["gnip"]["urls"]:
+                try:
+                    results["urls"][url["expanded_url"].split("/")[2]] += 1
+                except (KeyError,IndexError,AttributeError):
+                    pass
+        # and the number of links total
+        if ("number_of_links" in results) and ("urls" in tweet["gnip"]):
+            results["number_of_links"] += len(tweet["gnip"]["urls"])
+    except KeyError:
+        pass
     
     # -----------> timelines
     # make a timeline of UTC day of Tweets posted

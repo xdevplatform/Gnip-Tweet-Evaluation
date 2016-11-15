@@ -55,7 +55,7 @@ if __name__ == '__main__':
     splitting_config = None
     if args.splitting_config is not None:
         # if file not in local directory, temporarily extend path to its location
-        config_file_full_path = args.config_file.split('/')
+        config_file_full_path = args.splitting_config.split('/')
         if len(config_file_full_path) > 1:
             path = '/'.join( config_file_full_path[:-1] )
             sys.path.append( os.path.join(os.getcwd(),path) )
