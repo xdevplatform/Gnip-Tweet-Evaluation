@@ -26,6 +26,7 @@ if sys.version_info[0] < 3:
 def top_terms_output(ngrams_object, title, output_path_base):
     """ output top terms from the ngrams object"""
     sys.stdout.write("\n\n")
+
     sys.stdout.write(ngrams_object.get_repr(10))
     
     top_tweet_terms_file = open(output_path_base + title + '.txt', 'w')
@@ -53,7 +54,7 @@ def user_frequency_output(counts_dict, title, quantity, output_path_base):
 def count_frequency_output(counts_dict, title, quantity, item, output_path_base):
     """ output frequency counts """
     # counts_dict looks like: {item: quantity}
-    frequencies = sorted(counts_dict.items(), key=lambda x: x[1], reverse=True)
+    frequencies = sorted(counts_dict.items(), key=lambda x: abs(x[1]), reverse=True)
     if sys.version_info[0] < 3:
         list_of_output_strings = [ unicode(x[1]) + ', ' + x[0] for x in frequencies ]
     else:

@@ -37,7 +37,7 @@ class AnalysisTests(unittest.TestCase):
         Test count of Tweets in analysis code against known number
         """
         # configure results structure
-        results = analysis.setup_analysis(conversation=True)
+        results = analysis.setup_analysis(do_conversation=True)
         # is this id necessary for testing?
         #results["unique_id"] = "TEST"
         # run analysis code (including conversation) 
@@ -49,7 +49,7 @@ class AnalysisTests(unittest.TestCase):
         """ inject body with a predetermined number of test tokens """ 
         pass
         # configure results structure
-        results = analysis.setup_analysis(conversation=True)
+        results = analysis.setup_analysis(do_conversation=True)
         # use counter for verification 
         counter = 1
         for tweet in self.tweets:
@@ -64,7 +64,7 @@ class AnalysisTests(unittest.TestCase):
         """ inject hashtags with a predetermined number of test tokens """ 
         pass
         # configure results structure
-        results = analysis.setup_analysis(conversation=True)
+        results = analysis.setup_analysis(do_conversation=True)
         # use counter for verification 
         counter = 0
         for tweet in self.tweets:
@@ -79,7 +79,7 @@ class AnalysisTests(unittest.TestCase):
     def test_audience_length(self):
         pass
         # configure results structure
-        results = analysis.setup_analysis(audience=True)
+        results = analysis.setup_analysis(do_audience=True)
         # run analysis code (including audience) for user ids 
         analysis.analyze_tweets(self.tweets, results)  
         user_ids = results["tweets_per_user"].keys()
@@ -96,7 +96,7 @@ class AnalysisTests(unittest.TestCase):
         """ inject bio with a predetermined number of test tokens """
         pass
         # configure results structure
-        results = analysis.setup_analysis(audience=True)
+        results = analysis.setup_analysis(do_audience=True)
         # use counter for verification 
         counter = 1
         for tweet in self.tweets:

@@ -14,52 +14,39 @@ from simple_n_grams.simple_n_grams import SimpleNGrams
 
 logger = logging.getLogger("analysis")
 
-def analyze_tweets(tweet_generator,results,splitting_config=None): 
+def analyze_tweets(tweet_generator,results): 
     """ 
     Entry point for Tweet input.  A sequence of Tweet dicts and a results object are
     required.
-
-    If splitting_config is supplied, this function also splits Tweets into
-    analysis and baseline group. In this case, we place each set of absolute
-    results in sub-dictionaries keyed with 'analyzed' and 'baseline'. The
-    relative results are placed in the top-level location. The results
-    object must be pre-configured, since we don't know the user's
-    audience/conversation preference in this scope.
-
     """ 
-
-    if splitting_config is not None:
-        results_baseline = results['baseline'] 
-        results_analyzed = results['analyzed'] 
-        
-        analyzed_tweet_extractor = splitting_config['analyzed'] 
-        baseline_tweet_extractor = splitting_config['baseline'] 
-    else:
-        analyzed_tweet_extractor = lambda x: False
-        baseline_tweet_extractor = lambda x: False
         
     for tweet in tweet_generator:
-        
-        # analyze each Tweet 
-        if analyzed_tweet_extractor(tweet):
-            analyze_tweet(tweet,results_analyzed) 
-        if baseline_tweet_extractor(tweet):
-            analyze_tweet(tweet,results_baseline)
-        if splitting_config is None:
-            analyze_tweet(tweet,results)
+        analyze_tweet(tweet,results)
 
-    if "audience_api" in results:
+    if "audience_api" in results: 
         user_ids = results["tweets_per_user"].keys()
         analyze_user_ids(user_ids,results)
-    if splitting_config is not None:
-        user_ids_analyzed = results_analyzed["tweets_per_user"].keys()
-        user_ids_baseline = results_baseline["tweets_per_user"].keys()
-        logger.info('{} users in analysis group'.format(len(user_ids_analyzed)))
-        logger.info('{} users in baseline group'.format(len(user_ids_baseline))) 
-        analyze_user_ids(user_ids_analyzed=user_ids_analyzed,
-                results=results,
-                user_ids_baseline=user_ids_baseline
-                )
+
+def compare_results(results_analyzed, results_baseline):
+
+    user_ids_analyzed = results_analyzed["tweets_per_user"].keys()
+    user_ids_baseline = results_baseline["tweets_per_user"].keys()
+    logger.info('{} users in analysis user group'.format(len(user_ids_analyzed)))
+    logger.info('{} users in baseline user group'.format(len(user_ids_baseline))) 
+  
+    results_output = {}
+
+    produce_relative_audience(results_output,
+            results_analyzed,
+            results_baseline
+            )
+
+    produce_relative_text(results_output,
+            results_analyzed,
+            results_baseline
+            )
+
+    return results_output    
 
 def deserialize_tweets(line_generator):
     """ 
@@ -71,13 +58,14 @@ def deserialize_tweets(line_generator):
         except ValueError:
             continue
 
-def analyze_user_ids(user_ids_analyzed, results, groupings = None, user_ids_baseline = None):
+def analyze_user_ids(user_ids, results, groupings = None):
     """ 
     Call to Audience API happens here.  All we ask from the caller are user IDs, a
     results object, and (optionally) a grouping.
     """
     import gnip_insights_interface.audience_api as api
 
+    # set up groupings
     if groupings is not None:
         use_groupings = groupings
     else:
@@ -93,34 +81,22 @@ def analyze_user_ids(user_ids_analyzed, results, groupings = None, user_ids_base
         }}
         use_groupings = json.dumps(grouping_dict)
 
-    if user_ids_baseline is not None:
-        results_baseline = results['baseline'] 
-        results_analyzed = results['analyzed']
-        results_baseline["audience_api"] = api.query_users(list(user_ids_baseline), use_groupings)
-        results_analyzed["audience_api"] = api.query_users(list(user_ids_analyzed), use_groupings) 
-
-        compare_results(results)
-
-    else:
-        results["audience_api"] = api.query_users(list(user_ids_analyzed), use_groupings)
+    results["audience_api"] = api.query_users(list(user_ids), use_groupings)
 
 
-def compare_results(results): 
+def produce_relative_audience(results_output, results_analyzed, results_baseline): 
     """
     When multiple absolute results are stored at the 'baseline' and 'analyze'
     keys, this function computes their relative results and places them at the
     base level.
     """
     
-    results_baseline = results['baseline']
-    results_analyzed = results['analyzed']
-
     data_analyzed = results_analyzed['audience_api']
     data_baseline = results_baseline['audience_api']
-
     data_compared = collections.defaultdict(dict)
+    
     for group_name, grouping in data_analyzed.items():
-        if 'error' in grouping:
+        if 'errors' in grouping:
             logger.warning(str(grouping))
             continue
         if isinstance(grouping,str):
@@ -146,12 +122,41 @@ def compare_results(results):
                     except KeyError:
                         pass
             else:
-                sys.stderr.write("Found a value that is neither dict nor unicode str. Exiting.\n")
+                sys.stderr.write("Found a value that is neither dict nor unicode str. [{}] Exiting.\n".format(type(value_level_1)))
                 sys.exit(1)
-    results['audience_api'] = data_compared
+    results_output['audience_api'] = data_compared
+   
+def produce_relative_text(results_output,results_analyzed,results_baseline):
+    """
+    Return data representing the analyzed data renomalized by the baseline data
+    """
+
+    # results to renormalize
+    keys = ['hashtags','urls']
+    for key in keys:
+        try:
+            analyzed = results_analyzed[key] 
+        except KeyError:
+            continue
+        baseline = results_baseline[key]
+
+        # get normalization factors
+        B = sum(baseline.values())
+        A = sum(analyzed.values())
+
+        compared = defaultdict(int)
+        for a_item,a_value in analyzed.items():
+            if a_item not in baseline:
+                factor = 1
+            else:
+                a_frac = a_value / A 
+                b_frac = baseline[a_item] / B
+                factor = (a_frac - b_frac)/a_frac
+            compared[a_item] = analyzed[a_item] * factor
+        results_output[key] = compared
     
 
-def setup_analysis(conversation = False, audience = False, identifier = None, input_results = None):
+def setup_analysis(do_conversation = False, do_audience = False, identifier = None, input_results = None):
     """
     Created placeholders for quantities of interest in results structure;
     return results data structure.
@@ -170,10 +175,11 @@ def setup_analysis(conversation = False, audience = False, identifier = None, in
             "tweets_per_user": defaultdict(int),
             #"user_id_to_screenname": 
     }
-    if conversation:
+    if do_conversation:
+        results['do_conversation'] = True
         results["body_term_count"] = SimpleNGrams(
                 char_lower_cutoff=3
-                ,n_grams=1
+                ,n_grams=2
                 ,tokenizer="twitter"
                 )
         results["hashtags"] = defaultdict(int)
@@ -185,8 +191,11 @@ def setup_analysis(conversation = False, audience = False, identifier = None, in
         results["in_reply_to"] = defaultdict(int)
         results["RT_of_user"] = defaultdict(weight_and_screennames)
         results["quote_of_user"] = defaultdict(weight_and_screennames)
+    else:
+        results['do_conversation'] = True
 
-    if audience:
+    if do_audience:
+        results['do_audience'] = True
         results["bio_term_count"] = SimpleNGrams(
                 char_lower_cutoff=3
                 ,n_grams=1
@@ -194,16 +203,12 @@ def setup_analysis(conversation = False, audience = False, identifier = None, in
                 )
         results["profile_locations_regions"] = defaultdict(int)
         results["audience_api"] = ""
+    else:
+        results['do_audience'] = False
 
     # in the future we could add custom fields by adding kwarg = func where func is agg/extractor and kwarg is field name
    
-    # if an already-existing results object and an identifier are provided
-    # return the input results object with a sub-result keyed on the identifier 
-    if identifier is not None and input_results is not None:
-        input_results[identifier] = results 
-        return input_results
-    else:
-        return results
+    return results
 
 def analyze_tweet(tweet, results):
     """

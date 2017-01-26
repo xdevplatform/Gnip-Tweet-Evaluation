@@ -35,11 +35,11 @@ if __name__ == '__main__':
     parser.add_argument("-a","--do-audience-analysis",dest="do_audience_analysis",action="store_true",default=False,
             help="do audience analysis on users") 
     parser.add_argument("-i","--input-file-name",dest="input_file_name",default=None,
-            help="file containing tweet data; take input from stdin if not present") 
+            help="file containing Tweet data; take input from stdin if not present") 
     parser.add_argument('-o','--output-dir',dest='output_directory',default=os.environ['HOME'] + '/tweet_evaluation/',
             help='directory for output files; default is %(default)s')
-    parser.add_argument('-s','--splitting-config',dest='splitting_config',default=None,
-            help='module that contains functions on Tweets that define the "analyzed" and "baseline" sets')
+    parser.add_argument('-b','--baseline-input-file',dest='baseline_input_name',default=None,
+            help='Tweets against which to run a relative analysis')
     parser.add_argument('--no-insights',dest='use_insights',action='store_false',default=True)
     args = parser.parse_args()
 
@@ -50,38 +50,18 @@ if __name__ == '__main__':
             ,time_now.month
             ,time_now.day
             )
-   
-    # configure the results object and manage splitting
-    splitting_config = None
-    if args.splitting_config is not None:
-        # if file not in local directory, temporarily extend path to its location
-        config_file_full_path = args.splitting_config.split('/')
-        if len(config_file_full_path) > 1:
-            path = '/'.join( config_file_full_path[:-1] )
-            sys.path.append( os.path.join(os.getcwd(),path) )
-        else:
-            sys.path.append(os.getcwd())
-        splitting_config = importlib.import_module( config_file_full_path[-1].rstrip('.py') ).splitting_config
-        sys.path.pop()
-        
-        results = analysis.setup_analysis(conversation = args.do_conversation_analysis, 
-                audience = args.do_audience_analysis,
-                identifier = 'analyzed',
-                input_results = {}) 
-        results = analysis.setup_analysis(conversation = args.do_conversation_analysis, 
-                audience = args.do_audience_analysis,
-                identifier = 'baseline',
-                input_results = results) 
-    else:
-        results = analysis.setup_analysis(conversation = args.do_conversation_analysis, audience = args.do_audience_analysis) 
+    # get the empty results object, which defines the measurements to be run
+    results = analysis.setup_analysis(do_conversation = args.do_conversation_analysis, do_audience = args.do_audience_analysis) 
+
+    baseline_results = None
+    if args.baseline_input_name is not None:
+        baseline_results = analysis.setup_analysis(do_conversation = args.do_conversation_analysis, do_audience = args.do_audience_analysis)
 
     if not args.use_insights:
         results.pop('audience_api',None)
-        if 'analyzed' in results:
-            results['analyzed'].pop('audience_api',None)
-        if 'baseline' in results:
-            results['baseline'].pop('audience_api',None)
-
+        if args.baseline_input_name is not None:
+            baseline_results.pop('audience_api',None)
+    
     # manage input sources, file opening, and deserialization
     if args.input_file_name is not None:
         tweet_generator = analysis.deserialize_tweets(open(args.input_file_name))
@@ -89,7 +69,13 @@ if __name__ == '__main__':
         tweet_generator = analysis.deserialize_tweets(sys.stdin)
 
     # run analysis
-    analysis.analyze_tweets(tweet_generator, results, splitting_config)
+    analysis.analyze_tweets(tweet_generator, results)
 
+    # run baseline analysis, if requests
+    if baseline_results is not None:
+        baseline_tweet_generator = analysis.deserialize_tweets(open(args.baseline_input_name)) 
+        analysis.analyze_tweets(baseline_tweet_generator, baseline_results)
+        results = analysis.compare_results(results,baseline_results)
+    
     # dump the output
     output.dump_results(results, output_directory, args.unique_identifier)

@@ -55,36 +55,29 @@ handles data aggregation, display, and writing to files.
 
 # Relative Audience Evaluation
 
-The Audience API interface can be configured to perform a relative evaluation,
-in which the results for an _analysis_ set of user IDs is shown relative to the
-results for a _baseline_ set of user IDs. This in enabled 
-with the `-s` option to `user_id_evaluator.py`. This _splitting configuration_
-specifies that you a doing a _relative_ Tweet evaluation. The splitting config file
-defines these two sets of Tweets by defining two functions and mapping them in a dictionary.
+This tool can be configured to perform a relative evaluation,
+in which the results for an _analysis_ set of Tweets is shown relative to the
+results for a _baseline_ set of Tweets. In the case of audience analysis,
+the results for the _analysis_ user IDs are compared to those for the 
+_baseline_ user IDs.This functionality is enabled by specifying a 
+set of baseline Tweets with the `-b` option. The analysis Tweets are passes in as before.
 
-The example in `examples/my_splitting_config.py` demonstrates the pattern:
-```python
-def analyzed_function(tweet):
-    """ dummy filtering function """
-    try:
-        if len(tweet['actor']['preferredUsername']) > 7:
-            return True
-        else:
-            return False
-    except KeyError:
-        return False
+If audience analysis is selected, a relative analysis returns 
+difference in percentage for each category in the output taxonomy 
+of the Audience API. If a category is below the reporting threshold 
+for either set of users, it is not displayed in the relative analysis
+output. Other elements of the audience analysis, such as geo locations,
+are not implement for the relative analysis. If conversation analysis
+is selected, a relative analysis returns the top over- and under-indexing
+elements of the URLs and hashtags lists. No other elements of the 
+conversation analysis output are implemented for relative analysis.
 
-def baseline_function(tweet):
-    return not analyzed_function(tweet)
+Relative results for top-n lists are defined as follows:
 
-splitting_config = {
-    'analyzed':analyzed_function,
-    'baseline':baseline_function
-}
-```
-
-The function mapped to the _analyzed_ key selects Tweets in the analysis group,
-and the function mapped to the _baseline_ key selects the baseline group of Tweets.
-The result returned by the Audience API gives the difference (in percentage) between
-the analysis and baseline groups, for categories in which both groups return results. 
+The count for item `k` in the analyzed Tweets is `a_k`,
+and `b_k` in the baseline Tweets. The sum of `a_k` for all `k`
+found in the analyzed Tweets is `A`, and similarly `B` for the
+baseline Tweets. To produce relative results, the `a_k` are 
+re-weighted: `a'_k = a_k * ((a_k / A) - (b_k / B)) / (b_k / B)`.
+The top `a'_k` by absolute value are displayed. 
 
