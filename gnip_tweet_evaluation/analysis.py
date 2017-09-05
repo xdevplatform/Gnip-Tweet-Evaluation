@@ -23,23 +23,9 @@ def analyze_tweets(tweet_generator,results):
     for tweet in tweet_generator:
         analyze_tweet(tweet,results)
 
-    if "audience_api" in results: 
-        user_ids = results["tweets_per_user"].keys()
-        analyze_user_ids(user_ids,results)
-
 def compare_results(results_analyzed, results_baseline):
 
-    user_ids_analyzed = results_analyzed["tweets_per_user"].keys()
-    user_ids_baseline = results_baseline["tweets_per_user"].keys()
-    logger.info('{} users in analysis user group'.format(len(user_ids_analyzed)))
-    logger.info('{} users in baseline user group'.format(len(user_ids_baseline))) 
-  
     results_output = {}
-
-    produce_relative_audience(results_output,
-            results_analyzed,
-            results_baseline
-            )
 
     produce_relative_text(results_output,
             results_analyzed,
@@ -58,77 +44,9 @@ def deserialize_tweets(line_generator):
         except ValueError:
             continue
 
-def analyze_user_ids(user_ids, results, groupings = None):
-    """ 
-    Call to Audience API happens here.  All we ask from the caller are user IDs, a
-    results object, and (optionally) a grouping.
-    """
-    import gnip_insights_interface.audience_api as api
-
-    # set up groupings
-    if groupings is not None:
-        use_groupings = groupings
-    else:
-        grouping_dict = {"groupings": {
-            "gender": {"group_by": ["user.gender"]}
-            , "location_country": {"group_by": ["user.location.country"]}
-            , "location_country_region": {"group_by": ["user.location.country", "user.location.region"]}
-            , "interest": {"group_by": ["user.interest"]}
-            , "tv_genre": {"group_by": ["user.tv.genre"]}
-            , "device_os": {"group_by": ["user.device.os"]}
-            , "device_network": {"group_by": ["user.device.network"]}
-            , "language": {"group_by": ["user.language"]}
-        }}
-        use_groupings = json.dumps(grouping_dict)
-
-    results["audience_api"] = api.query_users(list(user_ids), use_groupings)
-
-
-def produce_relative_audience(results_output, results_analyzed, results_baseline): 
-    """
-    When multiple absolute results are stored at the 'baseline' and 'analyze'
-    keys, this function computes their relative results and places them at the
-    base level.
-    """
-    
-    data_analyzed = results_analyzed['audience_api']
-    data_baseline = results_baseline['audience_api']
-    data_compared = collections.defaultdict(dict)
-    
-    for group_name, grouping in data_analyzed.items():
-        if 'errors' in grouping:
-            logger.warning(str(grouping))
-            continue
-        if isinstance(grouping,str):
-            logger.warning(str(grouping))
-            continue
-
-        for key_level_1,value_level_1 in grouping.items():
-            if isinstance(value_level_1,str):
-                analyzed_value = float(value_level_1)
-                try:
-                    baseline_value = float(data_baseline[group_name][key_level_1])
-                    data_compared[group_name][key_level_1] = u"{0:.2f}".format(analyzed_value - baseline_value)
-                except KeyError:
-                    pass
-            elif isinstance(value_level_1,dict):
-                for key_level_2,value_level_2 in value_level_1.items():
-                    analyzed_value = float(value_level_2 )
-                    try:
-                        baseline_value = float(data_baseline[group_name][key_level_1][key_level_2]) 
-                        if key_level_1 not in data_compared[group_name]:
-                            data_compared[group_name][key_level_1] = {} 
-                        data_compared[group_name][key_level_1][key_level_2] = u"{0:.2f}".format(analyzed_value - baseline_value)
-                    except KeyError:
-                        pass
-            else:
-                sys.stderr.write("Found a value that is neither dict nor unicode str. [{}] Exiting.\n".format(type(value_level_1)))
-                sys.exit(1)
-    results_output['audience_api'] = data_compared
-   
 def produce_relative_text(results_output,results_analyzed,results_baseline):
     """
-    Return data representing the analyzed data renomalized by the baseline data
+    Return data representing the analyzed data normalized by the baseline data
     """
 
     # results to renormalize
@@ -202,7 +120,6 @@ def setup_analysis(do_conversation = False, do_audience = False, identifier = No
                 ,tokenizer="twitter"
                 )
         results["profile_locations_regions"] = defaultdict(int)
-        results["audience_api"] = ""
     else:
         results['do_audience'] = False
 

@@ -101,46 +101,6 @@ def utc_timeline_plot():
     """ plot timeline of users Tweeting, day graularity, UTC"""
     pass
 
-def audience_api_output(audience_api_results, output_path_base):
-    """ format the audience API results """
-    print('\n\nAudience API Results')
-    audience_api_file = open(output_path_base + '_audience_api.txt','w')
-    if 'error' not in audience_api_results:
-        for i, (grouping_name, grouping_result) in enumerate(audience_api_results.items()):
-            print('\n' + grouping_name + '\n' + '-' * len(grouping_name))
-            audience_api_file.write('\n' + grouping_name + '\n' + '-' * len(grouping_name) + '\n')
-            
-            if 'errors' in grouping_result:
-                print( grouping_result['errors'][0] )
-                audience_api_file.write(grouping_result['errors'][0])
-            else:
-                def expand(key, value):
-                    if isinstance(value, dict):
-                        return [ (key + ' | ' + k, v) for k, v in flatten_dict(value).items() ]
-                    elif isinstance(value, list):
-                        return ['why is this happening??'] 
-                    else:
-                        return [(key, value)]
-
-                flattened_result = dict([ item for k, v in grouping_result.items() for item in expand(k, v) ])
-                flattened_tuples = flattened_result.items()
-                grouping_result_csv = sorted(flattened_tuples, key=lambda x: (x[0].split('|')[0], -1 * float(x[-1])))
-                
-                for line in grouping_result_csv:
-                    print(line[0] + ' | ' + str(line[1]) )
-                    audience_api_file.write(line[0] + ' | ' + str(line[1]) + '\n' )
-    else:
-        print('Error: ' + audience_api_results['error'])
-        audience_api_file.write('Error: ' + audience_api_results['error'])
-
-def flatten_dict(d):
-    def expand(key, value):
-        if isinstance(value, dict):
-            return [ (key + ' | ' + k, v) for k, v in flatten_dict(value).items() ]
-        else:
-            return [ (key, value) ]
-    items = [ item for k, v in d.items() for item in expand(k, v) ]
-    return dict(items)
 
 def dump_results(results, output_path, uid):
    
@@ -200,8 +160,5 @@ def dump_results(results, output_path, uid):
     if 'profile_locations_regions' in results:
         count_frequency_output(results["profile_locations_regions"], 
                 "profile_locations", "number of occurences", "country, region", output_file_base)
-
-    if "audience_api" in results:
-        audience_api_output(results["audience_api"], output_file_base)
 
     sys.stdout.write('\n\n')
