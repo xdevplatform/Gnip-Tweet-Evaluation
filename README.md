@@ -2,47 +2,31 @@
 
 This repository contains a Python package and an executable script that
 performs audience and conversation analysis on sets of Tweet payloads.
-The audience analysis optionally includes data from Twitter's
-Audience API.
 
 # Installation
 
 This package can be installed from the cloned repository location.
 
-`[REPOSITORY] $ pip install -e .[plotting,insights]`
+`[REPOSITORY] $ pip install -e .[plotting]`
 
-The optional `plotting` specification installs the extra dependencies 
-needed for time series plotting,
-and the `insights` specification installs the 
-[Gnip-Insights-Interface](https://github.com/jeffakolb/Gnip-Insights-Interface) 
-package. To authenticate to the Gnip Insights products, you must have 
-a credentials file called `.twitter_api_creds` in your home directory, 
-which is formatted as described in the 
-[README](https://github.com/jeffakolb/Gnip-Insights-Interface/README.md) 
-for Gnip-Insights-Interface.
-
+The optional `plotting` specification installs the extra dependencies needed
+for time series plotting.
+ 
 # What It Does
 
 The core analysis module defines analyses to be performed on a set of Tweet bodies
 (conversation analysis) and on a set of Twitter user biographies (audience analysis).
 These analyses include the calculation of top n-grams, top hashtags, and top
 URLs, along with geographic and language summaries.
-We optionally augment the audience analysis by extracting the user IDs and running them
-through the [Twitter Audience API](http://support.gnip.com/apis/audience_api/). 
-This product returns aggregate info for demographic variables such as
-gender, age, device, carrier, location, and interests. 
 
 # Interfaces and Examples
 
-We do command-line Tweet evaluation with the `tweet_evaluator.py` script. 
-You must have credentials for the Audience API to get demographic model results.
-Otherwise, you can use the `--no-insights` option to stick to Tweet payload data
-All results can be returned to text files and to the screen. 
-From the repository directory,
-you can run the following example analysis on dummy Tweet data:
+We do command-line Tweet evaluation with the `tweet_evaluator.py` script.  All
+results can be returned to text files and to the screen.  From the repository
+directory, you can run the following example analysis on dummy Tweet data:
 
 ```bash
-$ cat example/dummy_tweets.json | tweet_evaluator.py -a -c --no-insights
+$ cat example/dummy_tweets.json | tweet_evaluator.py -a -c
 ```
 
 See the script's help menu for a full list of options and output specifications.
@@ -53,24 +37,17 @@ function, which configures all the analyses to be run. It also provides the
 ability to produce *relative* results (see next section). The output module
 handles data aggregation, display, and writing to files. 
 
-# Relative Audience Evaluation
+# Relative Evaluation
 
-This tool can be configured to perform a relative evaluation,
-in which the results for an _analysis_ set of Tweets is shown relative to the
-results for a _baseline_ set of Tweets. In the case of audience analysis,
-the results for the _analysis_ user IDs are compared to those for the 
-_baseline_ user IDs.This functionality is enabled by specifying a 
-set of baseline Tweets with the `-b` option. The analysis Tweets are passes in as before.
+This tool can be configured to perform a relative evaluation, in which the
+results for an _analysis_ set of Tweets is shown relative to the results for a
+_baseline_ set of Tweets. This functionality is enabled by specifying a set of
+baseline Tweets with the `-b` option. The analysis Tweets are passed in as
+before.
 
-If audience analysis is selected, a relative analysis returns 
-difference in percentage for each category in the output taxonomy 
-of the Audience API. If a category is below the reporting threshold 
-for either set of users, it is not displayed in the relative analysis
-output. Other elements of the audience analysis, such as geo locations,
-are not implement for the relative analysis. If conversation analysis
-is selected, a relative analysis returns the top over- and under-indexing
-elements of the URLs and hashtags lists. No other elements of the 
-conversation analysis output are implemented for relative analysis.
+If conversation analysis is selected, a relative analysis returns the top over-
+and under-indexing elements of the URLs and hashtags lists. No other elements
+of the conversation analysis output are implemented for relative analysis.
 
 Relative results for top-n lists are defined as follows:
 

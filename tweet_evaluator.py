@@ -17,10 +17,6 @@ from gnip_tweet_evaluation import analysis,output
 Perform audience and/or conversation analysis on a set of Tweets.
 """
 
-logger = logging.getLogger('audience_api')
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
-
 logger = logging.getLogger('analysis') 
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
@@ -40,7 +36,6 @@ if __name__ == '__main__':
             help='directory for output files; default is %(default)s')
     parser.add_argument('-b','--baseline-input-file',dest='baseline_input_name',default=None,
             help='Tweets against which to run a relative analysis')
-    parser.add_argument('--no-insights',dest='use_insights',action='store_false',default=True)
     args = parser.parse_args()
 
     # get the time right now, to use in output naming
@@ -57,11 +52,6 @@ if __name__ == '__main__':
     if args.baseline_input_name is not None:
         baseline_results = analysis.setup_analysis(do_conversation = args.do_conversation_analysis, do_audience = args.do_audience_analysis)
 
-    if not args.use_insights:
-        results.pop('audience_api',None)
-        if args.baseline_input_name is not None:
-            baseline_results.pop('audience_api',None)
-    
     # manage input sources, file opening, and deserialization
     if args.input_file_name is not None:
         tweet_generator = analysis.deserialize_tweets(open(args.input_file_name))

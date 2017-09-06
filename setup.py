@@ -12,5 +12,5 @@ setup(name='gnip_tweet_evaluation',
         description="Tools for evaluation of Tweets", 
         url='https://github.com/jeffakolb/Gnip-Tweet-Evaluation',
         install_requires=['sngrams'],
-        extras_require={'plotting':['matplotlib'],'insights':['gnip_insights_interface']}
+        extras_require={'plotting':['matplotlib']}
         )
